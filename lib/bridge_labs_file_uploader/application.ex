@@ -1,0 +1,36 @@
+defmodule BridgeLabsFileUploader.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      BridgeLabsFileUploaderWeb.Telemetry,
+      BridgeLabsFileUploader.Repo,
+      {DNSCluster, query: Application.get_env(:bridge_labs_file_uploader, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: BridgeLabsFileUploader.PubSub},
+      # Start the Finch HTTP client for sending emails
+      {Finch, name: BridgeLabsFileUploader.Finch},
+      # Start a worker by calling: BridgeLabsFileUploader.Worker.start_link(arg)
+      # {BridgeLabsFileUploader.Worker, arg},
+      # Start to serve requests, typically the last entry
+      BridgeLabsFileUploaderWeb.Endpoint
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: BridgeLabsFileUploader.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    BridgeLabsFileUploaderWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
